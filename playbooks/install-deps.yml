@@ -1,0 +1,166 @@
+---
+- hosts: all
+  become_user: root
+  tasks:
+    - name: Set Locales
+      ansible.builtin.locale_gen:
+        name: en_US.UTF-8
+        state: present
+      become: yes
+
+    - name: Update Packages
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Install software-properties-common and curl
+      ansible.builtin.apt:
+        pkg:
+          - "software-properties-common"
+          - "curl"
+      become: yes
+
+    - name: Add Ubuntu Universe Repository
+      ansible.builtin.command: add-apt-repository Universe
+      become: yes
+      
+    - name: Install ROS2 GPG Key
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/ros/rosdistro/master/ros.key"
+        dest: "/usr/share/keyrings/ros-archive-keyring.gpg"
+      become: yes
+
+    - name: Add ROS2 Apt Repository
+      ansible.builtin.command: 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null'
+      become: yes
+
+    - name: Update Packages
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Upgrade Packages
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Install ROS2 (Desktop)
+      ansible.builtin.apt:
+        pkg:
+          - "ros-humble-desktop"
+          - "ros-desktop-tools"
+      become: yes
+
+    - name: Add ROS2 setup script to global bashrc
+      ansible.builtin.lineinfile:
+        path: /etc/bash.bashrc
+        regexp: "^source /opt/ros/humble/setup.bash"
+        line: "source /opt/ros/humble/setup.bash"
+
+    - name: Install python3-vstool
+      ansible.builtin.apt:
+        name: "python3-vstool"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Clone libsbp (Swift Nav)
+      ansible.builtin.git:
+        repo: "https://github.com/swift-nav/libsbp.git"
+        dest: /tmp/libsbp
+        version: "v4.11.0"
+        recursive: yes
+        update: yes
+        # Hopefully this also does the equivalent of git submodule update --init --recursive
+
+    - name: Init libsbp build directory
+      ansible.builtin.file:
+        path: /tmp/libsbp/c/build
+        state: directory
+        mode: '700'
+
+    - name: Build libsbp
+      ansible.builtin.command: "cmake DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF ../;make"
+      args:
+        chdir: /tmp/libsbp/c/build/
+
+    - name: Install libsbp
+      ansible.builtin.command: "make install"
+      args:
+        chdir: /tmp/libsbp/c/build
+      become: yes
+
+    - name: Update Packages
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Upgrade Packages
+      ansible.builtin.apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+
+    - name: Install libserialport
+      ansible.builtin.apt:
+        pkg:
+          - "libserialport"
+      become: yes
+
+    - name: Download zed_sdk v4.1
+      ansible.builtin.get_url:
+        url: 'https://download.stereolabs.com/zedsdk/4.1/cu121/ubuntu22'
+        dest: /tmp/zed_sdk
+        mode: "u+rwx"
+
+    - name: Install zed_sdk v4.1
+      ansible.builtin.command: /tmp/zed_sdk
+
+    - name: Download cuda toolkit
+      ansible.builtin.get_url:
+        url: 'https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin'
+        dest: '/etc/apt/preferences.d/cuda-repository-pin-600/cuda-ubuntu2204.pin'
+      become: yes
+
+    - name: Download cuda repo local installer
+      ansible.builtin.get_url:
+        url: 'https://developer.download.nvidia.com/compute/cuda/12.4.1/local_installers/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb'
+        dest: '/tmp/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb'
+
+    - name: Install cuda repo locally
+      ansible.builtin.apt:
+        deb: '/tmp/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb'
+        update_cache: yes
+        cache_valid_time: 3600
+      become: yes
+  
+    - name: Install cuda keryrings
+      ansible.builtin.copy:
+        src: "/var/cuda-repo-ubuntu2204-12-4-local"
+        dest: "/usr/share/keyrings/"
+      with_fileglob:
+        - "cuda-*-keyring.gpg"
+      become: yes
+
+    - name: Install cuda toolkit and nvidia open + cuda drivers (550)
+      ansible.builtin.apt:
+        pkg: 
+          - "cuda-toolkit-12-4"
+          - "nvidia-drivers-550-open"
+          - "cuda-drivers-550"
+        update_cache: yes
+      become: yes
+
+
