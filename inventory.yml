@@ -1,6 +1,49 @@
 myhosts:
   hosts:
     asterius:
-      ansible_host: 192.168.0.100
-      ansible_user: mcav
+      ansible_host: ubuntu-vm
+      ansible_user: ubuntu
       esda_software_user: esda-sw
+      users:
+        - username: benjamin
+          comment: Benjamin McGaw
+          additional_groups:
+            - sudo
+            - dialout
+          ssh_authorized_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK+S9tAMI9wien4JgPYaZJ2ZMHZg3F6rmyR3U8W6XZD1"
+ 
+        - username: "jaimasters"
+          comment: "Jai Masters"
+          additional_groups:
+            - dialout
+          ssh_authorized_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJzQxvihfDaeLVhAdr9Ep+jVDr2HEcX+O7EALzsJEPk+ jaimasters@amongUS"
+
+        - username: "linal"
+          comment: "Linal Wekadapola"
+          additional_groups:
+            - dialout
+          ssh_authorized_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICHmtAnDu49mpGVv9YXHwL6w4pIF7uN2qe6XDyN1GoeR linal@DESKTOP-LF1B3DN"
+
+        - username: "samue"
+          comment: "Samuel Tri"
+          additional_groups:
+            - dialout
+          ssh_authorized_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID81BYjG7awAv5I3ITllLklJO2R122kRIfo30iVm+HCC samue@Credit"
+
+        - username: "ferip"
+          comment: "Baaset Moslih"
+          additional_groups:
+            - dialout
+          ssh_authorized_key: "# Key Pending"
+
+        - username: "william"
+          comment: "William Tioe"
+          additional_groups:
+            - dialout
+          ssh_authorized_key: "# Key Pending"
+
+        - username: "anthonyzhoon"
+          comment: "Anthony Oon"
+          additional_groups:
+            - dialout
+          ssh_authorized_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMF1BmC9WJIfmPCiGzwqJc35Ts5Jk+BrPQwW8Ax4UIh2 anthony.zh.oon@gmail.com"

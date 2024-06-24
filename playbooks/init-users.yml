@@ -1,0 +1,50 @@
+---
+- name: Initialise Users
+  hosts: all
+  become_user: root
+  tasks:
+    - name: Add users if they do not exist
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        comment: "{{ item.comment }}"
+        # Set the user's password to their username only if the user does not already exist
+        update_password: on_create
+        password: "{{ item.name }}"
+        create_home: true
+      loop: "{{ users }}"
+      # Register any added users to a variable so we can force password resets
+      register: added_users
+      # Fire notification so we can force any added users to set their passwords on login
+      notify: force_password_reset
+      become: true
+
+    - name: "Ensure User .ssh folders exist"
+      ansible.builtin.file:
+        path: "/home/{{ item.name }}/.ssh"
+        state: directory
+        owner: "{{ item.name }}"
+        group: "{{ item.name }}"
+        mode: "u=rwx,g=rwx,o="
+      become: true
+
+    - name: Enroll User SSH Authorized Public Keys
+      # Ensures that the defined ssh key is present in the user's authorized_keys file
+      ansible.builtin.lineinfile:
+        dest: "/home/{{ item.name }}/.ssh/authorized_keys"
+        line: "{{ item.authorized_ssh_key }}"
+        search_string: "{{ item.authorized_ssh_key }}"
+        # Set the owner to root to prevent a compromised account adding additional ssh keys (user has read only access)
+        owner: "root"
+        group: "root"
+        mode: "u=rwx,g=rwx,o=r"
+      loop: "{{ users }}"
+      become: true
+
+  handlers:
+    - name: Force default password expiration for new user accounts
+      ansible.builtin.command: chage -d 0 {{ item.name }}
+      become: true
+      loop: "{{ added_users.results }}"
+      when: item.changed
+      listen: force_password_reset
+      become: true

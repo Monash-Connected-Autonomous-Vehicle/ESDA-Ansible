@@ -1,50 +1,53 @@
 ---
-- hosts: all
+- name: Initialise ESDA Repo for Users
+  hosts: all
   become_user: root
-  tasks: 
+  tasks:
     - name: Create Workspace Folder
-      ansible.builtin.file: 
+      ansible.builtin.file:
         path: /home/{{ esda_software_user }}/esda_ws
         state: directory
         mode: '0775'
         owner: "{{ lgsm_user }}"
         group: "{{ lgsm_user }}"
-      become: yes
+      become: true
 
     - name: Clone ESDA Repo
       ansible.builtin.git:
         repo: 'https://github.com/Monash-Connected-Autonomous-Vehicle/ESDA.git'
         dest: '/home/{{ esda_software_user }}/esda_ws/ESDA'
-        recursive: yes
-        update: yes
-      become: yes
-      become_user: {{ esda_software_user }}
+        recursive: true
+        update: true
+      become: true
+      become_user: "{{ esda_software_user }}"
 
     - name: Import deps that are incompatible with rosdep/apt
       ansible.builtin.command: 'vcs import ESDA < ESDA/esda.repos'
-      args: 
+      args:
         chdir: '/home/{{ esda_software_user }}/esda_ws/'
+      become: false
 
     - name: Update Packages
       ansible.builtin.apt:
         upgrade: dist
-        update_cache: yes
+        update_cache: true
         cache_valid_time: 3600
-      become: yes
+      become: true
 
     - name: Install remaining dependencies with rosdep
       ansible.builtin.command: 'rosdep install --from-path ESDA --ignore-src -yr'
       args:
         chdir: '/home/{{ esda_software_user }}/esda_ws/'
+      become: false
 
     - name: Build ESDA
       ansible.builtin.command: 'colcon build'
       args:
         chdir: '/home/{{ esda_software_user }}/esda_ws/'
+      become: false
 
     - name: Source Setup Script
       ansible.builtin.command: 'source install/setup.bash'
       args:
         chdir: '/home/{{ esda_software_user }}/esda_ws/'
-
-
+      become: false
