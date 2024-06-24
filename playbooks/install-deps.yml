@@ -1,192 +1,219 @@
 ---
 - name: Initialise Dependencies
   hosts: all
-  become_user: root
   tasks:
     - name: Set Locales
       community.general.locale_gen:
         name: en_US.UTF-8
         state: present
       become: true
+      become_user: root
 
     - name: Get System Architecture
-      ansible.builtin.command: 'dpkg --print-architecture'
+      ansible.builtin.command: dpkg --print-architecture
       register: dpkg_architecture
       become: false
+      become_user: root
 
     - name: Update and Upgrade all packages
       ansible.builtin.apt:
         update_cache: true # Equivalent of `apt update`
-        upgrade: "yes"     # Equivalent of `apt upgrade`
+        upgrade: "yes" # Equivalent of `apt upgrade`
       become: true
+      become_user: root
 
     - name: Install software-properties-common and curl
       ansible.builtin.apt:
         pkg:
-          - "software-properties-common"
-          - "curl"
+          - software-properties-common
+          - curl
       become: true
+      become_user: root
 
     - name: Enable Ubuntu Universe Repository
       ansible.builtin.apt_repository:
         repo: "{{ item }}"
       loop:
-        - "deb http://au.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe"
-        - "deb http://au.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }}-updates universe"
-        - "deb http://au.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }}-backports universe"
-        - "deb http://au.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }}-security universe"
+        - deb http://au.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe
+        - deb http://au.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }}-updates universe
+        - deb http://au.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }}-backports universe
+        - deb http://au.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }}-security universe
       become: true
+      become_user: root
 
     - name: Install ROS2 GPG Key
       ansible.builtin.get_url:
-        url: "https://raw.githubusercontent.com/ros/rosdistro/master/ros.key"
-        dest: "/usr/share/keyrings/ros-archive-keyring.gpg"
-        owner: "root"
-        group: "root"
-        mode: "u=rw-,g=r--,o=r--"
+        url: https://raw.githubusercontent.com/ros/rosdistro/master/ros.key
+        dest: /usr/share/keyrings/ros-archive-keyring.gpg
+        owner: root
+        group: root
+        mode: u=rw-,g=r--,o=r--
       become: true
+      become_user: root
 
     - name: Add ROS2 Apt Repository
       ansible.builtin.apt_repository:
-        repo: 'deb [arch={{ dpkg_architecture.stdout }} signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu {{ ansible_distribution_release }} main'
+        repo: deb [arch={{ dpkg_architecture.stdout }} signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu {{ ansible_distribution_release
+          }} main
       become: true
+      become_user: root
 
     - name: Update and Upgrade Packages
       ansible.builtin.apt:
         update_cache: true
       become: true
+      become_user: root
 
     - name: Install ROS2 (Desktop)
       ansible.builtin.apt:
         pkg:
-          - "ros-humble-desktop"
-          - "ros-dev-tools"
+          - ros-humble-desktop
+          - ros-dev-tools
       become: true
+      become_user: root
 
     - name: Add ROS2 setup script to global bashrc
       ansible.builtin.lineinfile:
         path: /etc/bash.bashrc
-        regexp: "^source /opt/ros/humble/setup.bash"
-        line: "source /opt/ros/humble/setup.bash"
+        regexp: ^source /opt/ros/humble/setup.bash
+        line: source /opt/ros/humble/setup.bash
       become: true
+      become_user: root
 
     - name: Install python3-vcstool
       ansible.builtin.apt:
-        name: "python3-vcstool"
+        name: python3-vcstool
         update_cache: true
         cache_valid_time: 3600
       become: true
+      become_user: root
 
     - name: Clone libsbp (Swift Nav)
       ansible.builtin.git:
-        repo: "https://github.com/swift-nav/libsbp.git"
+        repo: https://github.com/swift-nav/libsbp.git
         dest: /tmp/libsbp
-        version: "v4.11.0"
+        version: v4.11.0
         recursive: true
         update: true
       become: false
-        # Hopefully this also does the equivalent of git submodule update --init --recursive
+      become_user: root
+    # Hopefully this also does the equivalent of git submodule update --init --recursive
 
     - name: Init libsbp build directory
       ansible.builtin.file:
         path: /tmp/libsbp/c/build
         state: directory
-        mode: '700'
+        mode: "700"
       become: false
+      become_user: root
 
     - name: Build libsbp (cmake)
-      ansible.builtin.command: "cmake DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF ../"
+      ansible.builtin.command: cmake DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF ../
       args:
         chdir: /tmp/libsbp/c/build/
       become: false
+      become_user: root
 
     - name: Build libsbp (make)
-      ansible.builtin.command: "make"
+      ansible.builtin.command: make
       args:
         chdir: /tmp/libsbp/c/build/
       become: false
+      become_user: root
 
     - name: Install libsbp
-      ansible.builtin.command: "make install"
+      ansible.builtin.command: make install
       args:
         chdir: /tmp/libsbp/c/build
       become: true
+      become_user: root
 
     - name: Update and Upgrade all packages
       ansible.builtin.apt:
         update_cache: true # Equivalent of `apt update`
-        upgrade: "yes"     # Equivalent of `apt upgrade`
+        upgrade: "yes" # Equivalent of `apt upgrade`
       become: true
+      become_user: root
 
     - name: Install libserialport-dev
       ansible.builtin.apt:
-        name: "libserialport-dev"
+        name: libserialport-dev
       become: true
+      become_user: root
 
     - name: Download zed_sdk v4.1
       ansible.builtin.get_url:
-        url: 'https://download.stereolabs.com/zedsdk/4.1/cu121/ubuntu22'
+        url: https://download.stereolabs.com/zedsdk/4.1/cu121/ubuntu22
         dest: /tmp/zed_sdk
-        mode: "u+rwx"
+        mode: u+rwx
       become: false
+      become_user: root
 
     - name: Install zed_sdk v4.1
       ansible.builtin.command: /tmp/zed_sdk -- silent skip_cuda
       become: true
+      become_user: root
 
     - name: Create folder for cuda toolkit
       ansible.builtin.file:
-        path: '/etc/apt/preferences.d/cuda-repository-pin-600/'
+        path: /etc/apt/preferences.d/cuda-repository-pin-600/
         state: directory
-        mode: "u=rwx,g=---,o=---"
+        mode: u=rwx,g=---,o=---
       become: true
+      become_user: root
 
     - name: Download cuda toolkit
       ansible.builtin.get_url:
-        url: 'https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin'
-        dest: '/etc/apt/preferences.d/cuda-repository-pin-600/cuda-ubuntu2204.pin'
-        mode: "u=rwx,g=---,o=---"
+        url: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+        dest: /etc/apt/preferences.d/cuda-repository-pin-600/cuda-ubuntu2204.pin
+        mode: u=rwx,g=---,o=---
       become: true
+      become_user: root
 
     - name: Download cuda repo local installer
       ansible.builtin.get_url:
-        url: 'https://developer.download.nvidia.com/compute/cuda/12.4.1/local_installers/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb'
-        dest: '/tmp/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb'
+        url: https://developer.download.nvidia.com/compute/cuda/12.4.1/local_installers/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb
+        dest: /tmp/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb
         owner: "{{ ansible_user }}"
-        mode: "u=rwx,g=---,o=---"
+        mode: u=rwx,g=---,o=---
       become: false
+      become_user: root
 
     - name: Install cuda repo locally
       ansible.builtin.apt:
-        deb: '/tmp/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb'
+        deb: /tmp/cuda-repo-ubuntu2204-12-4-local_12.4.1-550.54.15-1_amd64.deb
         update_cache: true
         cache_valid_time: 3600
       become: true
+      become_user: root
 
     - name: Collate cuda keyrings
       ansible.builtin.find:
-        paths: '/var/cuda-repo-ubuntu2204-12-4-local'
-        patterns: 'cuda-*-keyring.gpg'
+        paths: /var/cuda-repo-ubuntu2204-12-4-local
+        patterns: cuda-*-keyring.gpg
       register: cuda_keyrings
       become: false
+      become_user: root
 
     - name: Install cuda keryrings
       ansible.builtin.copy:
         src: "{{ item.path }}"
         remote_src: true
-        dest: "/usr/share/keyrings/"
-        owner: "root"
-        group: "root"
-        mode: "u=rw-,g=r--,o=r--"
+        dest: /usr/share/keyrings/
+        owner: root
+        group: root
+        mode: u=rw-,g=r--,o=r--
 
       with_items: "{{ cuda_keyrings.files }}"
       become: true
+      become_user: root
 
     - name: Install cuda toolkit and nvidia open + cuda drivers (550)
       ansible.builtin.apt:
         pkg:
-          - "cuda-toolkit-12-4"
-          - "nvidia-driver-550-open"
-          - "cuda-drivers-550"
+          - cuda-toolkit-12-4
+          - nvidia-driver-550-open
+          - cuda-drivers-550
         update_cache: true
       become: true
+      become_user: root

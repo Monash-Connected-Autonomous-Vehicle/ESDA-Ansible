@@ -11,7 +11,7 @@ myhosts:
             - sudo
             - dialout
           ssh_authorized_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK+S9tAMI9wien4JgPYaZJ2ZMHZg3F6rmyR3U8W6XZD1"
- 
+
         - username: "jaimasters"
           comment: "Jai Masters"
           additional_groups:

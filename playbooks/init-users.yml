@@ -1,7 +1,6 @@
 ---
 - name: Initialise Users
   hosts: all
-  become_user: root
   tasks:
     - name: Add users if they do not exist
       ansible.builtin.user:
@@ -17,6 +16,7 @@
       # Fire notification so we can force any added users to set their passwords on login
       notify: force_password_reset
       become: true
+      become_user: root
 
     - name: "Ensure User .ssh folders exist"
       ansible.builtin.file:
@@ -26,6 +26,7 @@
         group: "{{ item.name }}"
         mode: "u=rwx,g=rwx,o="
       become: true
+      become_user: root
 
     - name: Enroll User SSH Authorized Public Keys
       # Ensures that the defined ssh key is present in the user's authorized_keys file
@@ -39,12 +40,13 @@
         mode: "u=rwx,g=rwx,o=r"
       loop: "{{ users }}"
       become: true
+      become_user: root
 
   handlers:
     - name: Force default password expiration for new user accounts
       ansible.builtin.command: chage -d 0 {{ item.name }}
-      become: true
       loop: "{{ added_users.results }}"
       when: item.changed
       listen: force_password_reset
       become: true
+      become_user: root

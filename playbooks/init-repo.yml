@@ -1,31 +1,32 @@
 ---
 - name: Initialise ESDA Repo for Users
   hosts: all
-  become_user: root
   tasks:
     - name: Create Workspace Folder
       ansible.builtin.file:
         path: /home/{{ esda_software_user }}/esda_ws
         state: directory
-        mode: '0775'
+        mode: "0775"
         owner: "{{ lgsm_user }}"
         group: "{{ lgsm_user }}"
       become: true
+      become_user: root
 
     - name: Clone ESDA Repo
       ansible.builtin.git:
-        repo: 'https://github.com/Monash-Connected-Autonomous-Vehicle/ESDA.git'
-        dest: '/home/{{ esda_software_user }}/esda_ws/ESDA'
+        repo: https://github.com/Monash-Connected-Autonomous-Vehicle/ESDA.git
+        dest: /home/{{ esda_software_user }}/esda_ws/ESDA
         recursive: true
         update: true
       become: true
       become_user: "{{ esda_software_user }}"
 
     - name: Import deps that are incompatible with rosdep/apt
-      ansible.builtin.command: 'vcs import ESDA < ESDA/esda.repos'
+      ansible.builtin.command: vcs import ESDA < ESDA/esda.repos
       args:
-        chdir: '/home/{{ esda_software_user }}/esda_ws/'
+        chdir: /home/{{ esda_software_user }}/esda_ws/
       become: false
+      become_user: root
 
     - name: Update Packages
       ansible.builtin.apt:
@@ -33,21 +34,25 @@
         update_cache: true
         cache_valid_time: 3600
       become: true
+      become_user: root
 
     - name: Install remaining dependencies with rosdep
-      ansible.builtin.command: 'rosdep install --from-path ESDA --ignore-src -yr'
+      ansible.builtin.command: rosdep install --from-path ESDA --ignore-src -yr
       args:
-        chdir: '/home/{{ esda_software_user }}/esda_ws/'
+        chdir: /home/{{ esda_software_user }}/esda_ws/
       become: false
+      become_user: root
 
     - name: Build ESDA
-      ansible.builtin.command: 'colcon build'
+      ansible.builtin.command: colcon build
       args:
-        chdir: '/home/{{ esda_software_user }}/esda_ws/'
+        chdir: /home/{{ esda_software_user }}/esda_ws/
       become: false
+      become_user: root
 
     - name: Source Setup Script
-      ansible.builtin.command: 'source install/setup.bash'
+      ansible.builtin.command: source install/setup.bash
       args:
-        chdir: '/home/{{ esda_software_user }}/esda_ws/'
+        chdir: /home/{{ esda_software_user }}/esda_ws/
       become: false
+      become_user: root
