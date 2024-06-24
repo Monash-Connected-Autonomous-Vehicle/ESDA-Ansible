@@ -3,7 +3,7 @@ myhosts:
     asterius:
       ansible_host: ubuntu-vm
       ansible_user: ubuntu
-      esda_software_user: esda-sw
+      esda_software_user: benjamin
       users:
         - username: benjamin
           comment: Benjamin McGaw

@@ -7,8 +7,8 @@
         path: /home/{{ esda_software_user }}/esda_ws
         state: directory
         mode: "0775"
-        owner: "{{ lgsm_user }}"
-        group: "{{ lgsm_user }}"
+        owner: "{{ esda_software_user }}"
+        group: "{{ esda_software_user }}"
       become: true
       become_user: root
 
@@ -17,42 +17,76 @@
         repo: https://github.com/Monash-Connected-Autonomous-Vehicle/ESDA.git
         dest: /home/{{ esda_software_user }}/esda_ws/ESDA
         recursive: true
-        update: true
+        update: true 
       become: true
       become_user: "{{ esda_software_user }}"
 
-    - name: Import deps that are incompatible with rosdep/apt
-      ansible.builtin.command: vcs import ESDA < ESDA/esda.repos
-      args:
-        chdir: /home/{{ esda_software_user }}/esda_ws/
-      become: false
-      become_user: root
+    - name: Clone Swiftnav ROS2 Wrapper
+      ansible.builtin.git:
+        repo: https://github.com/swift-nav/swiftnav-ros2.git
+        dest: /home/{{ esda_software_user }}/esda_ws/ESDA/swiftnav_ros2
+        recursive: true
+        version: master
+      become: true
+      become_user: "{{ esda_software_user }}"
+
+    - name: Clone ZED ROS2 Wrapper
+      ansible.builtin.git:
+        repo: https://github.com/Monash-Connected-Autonomous-Vehicle/zed-ros2-wrapper.git
+        dest: /home/{{ esda_software_user }}/esda_ws/ESDA/zed-ros-2-wrapper
+        recursive: true
+        version: esda
+      become: true
+      become_user: "{{ esda_software_user }}"
+
+    # - name: Import deps that are incompatible with rosdep/apt
+    #   ansible.builtin.command: vcs import ESDA < ESDA/esda.repos
+    #   args:
+    #     chdir: /home/{{ esda_software_user }}/esda_ws/
+    #   become: true
+    #   become_user: root
 
     - name: Update Packages
       ansible.builtin.apt:
-        upgrade: dist
         update_cache: true
-        cache_valid_time: 3600
       become: true
       become_user: root
+
+    - name: Initialise rosdep
+      ansible.builtin.command: 
+        cmd: "rosdep init"
+        creates: "/etc/ros/rosdep/sources.list.d/20-default.list"
+      args:
+        chdir: /home/{{ esda_software_user }}/esda_ws/
+      become: true
+      become_user: root
+
+    - name: Update rosdep
+      ansible.builtin.command:
+        cmd: "rosdep update"
+      args: 
+        chdir: /home/{{ esda_software_user }}/esda_ws/
+      become: true
+      become: true
+      become_user: "{{ esda_software_user }}"
 
     - name: Install remaining dependencies with rosdep
       ansible.builtin.command: rosdep install --from-path ESDA --ignore-src -yr
       args:
         chdir: /home/{{ esda_software_user }}/esda_ws/
-      become: false
-      become_user: root
+      become: true
+      become_user: "{{ esda_software_user }}"
 
     - name: Build ESDA
       ansible.builtin.command: colcon build
       args:
         chdir: /home/{{ esda_software_user }}/esda_ws/
-      become: false
-      become_user: root
+      become: true
+      become_user: "{{ esda_software_user }}"
 
     - name: Source Setup Script
       ansible.builtin.command: source install/setup.bash
       args:
         chdir: /home/{{ esda_software_user }}/esda_ws/
-      become: false
-      become_user: root
+      become: true
+      become_user: "{{ esda_software_user }}"
