@@ -4,11 +4,11 @@
   tasks:
     - name: Add users if they do not exist
       ansible.builtin.user:
-        name: "{{ item.name }}"
+        name: "{{ item.username }}"
         comment: "{{ item.comment }}"
         # Set the user's password to their username only if the user does not already exist
         update_password: on_create
-        password: "{{ item.name }}"
+        password: "{{ item.username | password_hash('sha512') }}"
         create_home: true
       loop: "{{ users }}"
       # Register any added users to a variable so we can force password resets
@@ -20,33 +20,36 @@
 
     - name: "Ensure User .ssh folders exist"
       ansible.builtin.file:
-        path: "/home/{{ item.name }}/.ssh"
+        path: "/home/{{ item.username }}/.ssh"
         state: directory
-        owner: "{{ item.name }}"
-        group: "{{ item.name }}"
+        owner: "{{ item.username }}"
+        group: "{{ item.username }}"
         mode: "u=rwx,g=rwx,o="
+      loop: "{{ users }}"
       become: true
       become_user: root
 
     - name: Enroll User SSH Authorized Public Keys
       # Ensures that the defined ssh key is present in the user's authorized_keys file
       ansible.builtin.lineinfile:
-        dest: "/home/{{ item.name }}/.ssh/authorized_keys"
-        line: "{{ item.authorized_ssh_key }}"
-        search_string: "{{ item.authorized_ssh_key }}"
+        dest: "/home/{{ item.username }}/.ssh/authorized_keys"
+        line: "{{ item.ssh_authorized_key }}"
+        search_string: "{{ item.ssh_authorized_key }}"
         # Set the owner to root to prevent a compromised account adding additional ssh keys (user has read only access)
         owner: "root"
         group: "root"
         mode: "u=rwx,g=rwx,o=r"
+        create: true
       loop: "{{ users }}"
       become: true
       become_user: root
 
   handlers:
     - name: Force default password expiration for new user accounts
-      ansible.builtin.command: chage -d 0 {{ item.name }}
+      ansible.builtin.shell: "chage -d 0 {{ item['invocation']['module_args']['name'] }}"
+      #ansible.builtin.debug: "chage -d 0 {{ item['invocation']['module_args']['name'] }}"
       loop: "{{ added_users.results }}"
-      when: item.changed
+      when: "{{ item.changed == true }}"
       listen: force_password_reset
       become: true
       become_user: root
