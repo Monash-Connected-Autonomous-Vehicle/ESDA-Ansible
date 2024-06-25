@@ -9,6 +9,8 @@
         # Set the user's password to their username only if the user does not already exist
         update_password: on_create
         password: "{{ item.username | password_hash('sha512') }}"
+        groups: "{{ item.additional_groups }}"
+        append: true
         create_home: true
       loop: "{{ users }}"
       # Register any added users to a variable so we can force password resets
@@ -46,10 +48,9 @@
 
   handlers:
     - name: Force default password expiration for new user accounts
-      ansible.builtin.shell: "chage -d 0 {{ item['invocation']['module_args']['name'] }}"
-      #ansible.builtin.debug: "chage -d 0 {{ item['invocation']['module_args']['name'] }}"
+      ansible.builtin.command: "chage -d 0 {{ item['invocation']['module_args']['name'] }}"
       loop: "{{ added_users.results }}"
-      when: "{{ item.changed == true }}"
+      when: item.changed == true
       listen: force_password_reset
       become: true
       become_user: root

@@ -17,7 +17,7 @@
         repo: https://github.com/Monash-Connected-Autonomous-Vehicle/ESDA.git
         dest: /home/{{ esda_software_user }}/esda_ws/ESDA
         recursive: true
-        update: true 
+        update: true
       become: true
       become_user: "{{ esda_software_user }}"
 
@@ -53,7 +53,7 @@
       become_user: root
 
     - name: Initialise rosdep
-      ansible.builtin.command: 
+      ansible.builtin.command:
         cmd: "rosdep init"
         creates: "/etc/ros/rosdep/sources.list.d/20-default.list"
       args:
@@ -64,9 +64,8 @@
     - name: Update rosdep
       ansible.builtin.command:
         cmd: "rosdep update"
-      args: 
+      args:
         chdir: /home/{{ esda_software_user }}/esda_ws/
-      become: true
       become: true
       become_user: "{{ esda_software_user }}"
 
